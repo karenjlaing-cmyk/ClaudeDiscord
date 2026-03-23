@@ -8,3 +8,4 @@ duckduckgo-search
 chromadb
 langchain-community
 langchain-openai
+aiohttp
