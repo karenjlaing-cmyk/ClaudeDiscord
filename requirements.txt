@@ -6,3 +6,4 @@ openai
 aiosqlite
 duckduckgo-search
 chromadb
+langchain-community
