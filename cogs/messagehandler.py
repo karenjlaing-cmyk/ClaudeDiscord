@@ -9,6 +9,43 @@ from helpers.constants import ALIASES
 from helpers.db_manager import log_message
 
 SLEEPTIMER = 5
+DISCORD_MAX_LENGTH = 2000
+
+
+def split_message(text, max_length=DISCORD_MAX_LENGTH):
+    """Split a message into chunks that fit within Discord's character limit."""
+    if len(text) <= max_length:
+        return [text]
+
+    chunks = []
+    remaining = text
+
+    while len(remaining) > max_length:
+        split_at = max_length
+
+        para_break = remaining.rfind("\n\n", 0, max_length)
+        if para_break > max_length * 0.3:
+            split_at = para_break + 2
+        elif (nl := remaining.rfind("\n", 0, max_length)) > max_length * 0.3:
+            split_at = nl + 1
+        elif (sent := max(
+            remaining.rfind(". ", 0, max_length),
+            remaining.rfind("! ", 0, max_length),
+            remaining.rfind("? ", 0, max_length),
+        )) > max_length * 0.3:
+            split_at = sent + 2
+        elif (space := remaining.rfind(" ", 0, max_length)) > max_length * 0.3:
+            split_at = space + 1
+
+        chunk = remaining[:split_at].rstrip()
+        if chunk:
+            chunks.append(chunk)
+        remaining = remaining[split_at:].lstrip()
+
+    if remaining.strip():
+        chunks.append(remaining.strip())
+
+    return chunks
 
 
 def embedder(msg):
@@ -95,8 +132,10 @@ class ListenerCog(commands.Cog, name="listener"):
             response = await self.bot.get_cog("chatbot").chat_command(message, image_response)
             if response:
                 async with message.channel.typing():
-                    response_message = await message.channel.send(response)
-                    await log_message(response_message)
+                    chunks = split_message(response)
+                    for chunk in chunks:
+                        response_message = await message.channel.send(chunk)
+                        await log_message(response_message)
 
     async def handle_text_message(self, message, mode=''):
 
@@ -107,8 +146,10 @@ class ListenerCog(commands.Cog, name="listener"):
             response = await self.bot.get_cog("chatbot").chat_command(message, message.clean_content)
             if response:
                 async with message.channel.typing():
-                    response_message = await message.channel.send(response)
-                    await log_message(response_message)
+                    chunks = split_message(response)
+                    for chunk in chunks:
+                        response_message = await message.channel.send(chunk)
+                        await log_message(response_message)
 
     async def set_listen_only_mode_timer(self, channel_id):
         
