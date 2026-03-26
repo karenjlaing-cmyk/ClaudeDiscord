@@ -144,6 +144,11 @@ class Chatbot:
 
         system_prompt = MAINTEMPLATE.replace("{history}", "").replace("{input}", "").strip()
 
+        # Inject current date so the model knows what day it is
+        now = datetime.now(timezone.utc)
+        date_str = now.strftime("%A, %d %B %Y, %H:%M UTC")
+        system_prompt = f"{system_prompt}\n\n---\nCurrent date and time: {date_str}"
+
         user_message = f"{name}: {message_content}"
         await self.save_message(channel_id, "user", user_message)
         history.append({"role": "user", "content": user_message})
