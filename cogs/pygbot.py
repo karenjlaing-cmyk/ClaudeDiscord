@@ -18,13 +18,17 @@ class Chatbot:
 
     async def get_history(self, channel_id):
         try:
+            # Fetch the 20 most recent messages (newest first)
             result = supabase.table("conversation_history") \
                 .select("role, content") \
                 .eq("channel_id", channel_id) \
-                .order("created_at", desc=False) \
+                .order("created_at", desc=True) \
                 .limit(20) \
                 .execute()
-            return [{"role": r["role"], "content": r["content"]} for r in result.data]
+            # Reverse to chronological order for the API (oldest first)
+            messages = [{"role": r["role"], "content": r["content"]} for r in result.data]
+            messages.reverse()
+            return messages
         except Exception as e:
             print(f"Error fetching history: {e}")
             return []
@@ -85,6 +89,11 @@ class ChatbotCog(commands.Cog, name="chatbot"):
     async def chat_command(self, message, message_content):
         response = await self.chatbot.generate_response(message, message_content)
         return response
+
+    async def chat_command_nr(self, author_name, channel_id, message_content):
+        """Save a message to history without generating a response (listen-only mode)."""
+        user_message = f"{author_name}: {message_content}"
+        await self.chatbot.save_message(str(channel_id), "user", user_message)
 
 
 async def setup(bot):

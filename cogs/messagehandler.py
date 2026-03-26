@@ -150,7 +150,11 @@ class ListenerCog(commands.Cog, name="listener"):
         directed_at_bot = (is_reply_to_bot or mentions_bot or contains_bot_name) and not is_false_positive
 
         # Determine message type
-        message_type = 'nr' if self.listen_only_mode[message.channel.id] or not directed_at_bot else None
+        # CURRENT: Respond to all messages in bot channels
+        # FUTURE: When multiple AIs share the server, uncomment the directed_at_bot check
+        # to only respond when addressed directly
+        # message_type = 'nr' if self.listen_only_mode[message.channel.id] or not directed_at_bot else None
+        message_type = 'nr' if self.listen_only_mode.get(message.channel.id, False) else None
 
         # Handle the message appropriately
         if await self.has_image_attachment(message):
@@ -158,8 +162,8 @@ class ListenerCog(commands.Cog, name="listener"):
         else:
             await self.handle_text_message(message, message_type)
 
-        # Reset the cooldown timer for the channel if the message is directed at the bot and not in cooldown
-        if directed_at_bot and not self.listen_only_mode[message.channel.id]:
+        # Set cooldown after responding (prevents rapid-fire responses)
+        if message_type != 'nr' and not self.listen_only_mode.get(message.channel.id, False):
             asyncio.create_task(self.set_listen_only_mode_timer(message.channel.id))
 
 
